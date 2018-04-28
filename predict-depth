@@ -1,0 +1,62 @@
+#!/usr/local/Cellar/python3/3.6.3/bin/python3
+# -*- mode:python -*-
+#!/Library/Frameworks/Python.framework/Versions/3.7/bin/python3
+
+from optparse import OptionParser
+from pathlib  import Path
+from glob     import iglob
+
+from nnetwork           import DCNF_FCSP_Model
+from do_save_prediction import save
+
+parser = OptionParser()
+parser.add_option('-i', dest='input_dir',  default='inputs/')
+parser.add_option('-m', dest='model_dir',  default='trained-models/')
+parser.add_option('-t', dest='type',       default='indoor', choices=['indoor', 'outdoor'])
+parser.add_option('-o', dest='output_dir', default='outputs')
+
+def main():
+    options, args = parser.parse_args()
+
+    model_dir = Path(options.model_dir)
+
+    if options.type == 'indoor':
+        linear_scale = False
+        model = DCNF_FCSP_Model(model_dir / 'dcnf-fcsp-make3d.mat',
+                                max_img_edge = 640,
+                                avg_sp_size  = 20)
+
+    if options.type == 'outdoor':
+        linear_scale = True
+        model = DCNF_FCSP_Model(model_dir / 'dcnf-fcsp-nyud2.mat',
+                                max_img_edge = 600,
+                                avg_sp_size  = 16)
+
+
+    output_dir = Path(options.output_dir) if options.output_dir else None
+    if output_dir:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    for filepath in iglob(str(Path(options.input_dir) / '*.*')):
+        # # Start a new process to infer depths.
+        # if len(SAVEDPIDS) < 2*os.cpu_count():
+        #   pid = os.fork()
+        #   if pid == 0:
+        #     DO DEEPEN
+        #   else:
+        #     SAVE NEW PID in SAVEDPIDS
+        #
+        # # Wait for CPU resources to become available.
+        # while len(SAVEDPIDS) >= 2*os.cpu_count():
+        #   pid, status = os.wait()
+        #   REMOVE PID from SAVEDPIDS
+        depths = model.deepen(Path(filepath))
+        if output_dir and output_dir.is_dir():
+            print('Saving prediction results in: %s\n' % (str(output_dir)))
+            save(depths, filepath, output_dir,
+                 model_norm_settings=model.label_norm,
+                 linear_scale=linear_scale)
+
+
+if __name__ == "__main__":
+   main()
