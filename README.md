@@ -8,4 +8,4 @@ https://bitbucket.org/fayao/dcnf-fcsp
 
 https://github.com/raingo/dcnf-fcsp
 
-The trained model is too large to store in a free GitHub account.  Please contact me if you need a copy.
+The trained model is too large to store in a free GitHub account.
